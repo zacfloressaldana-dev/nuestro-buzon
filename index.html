@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuestro buzón 💌</title>
+<style>
+  body { font-family: Georgia, serif; background: #fdf0f3; margin: 0; padding: 20px; color: #4a2c35; max-width: 600px; margin-left: auto; margin-right: auto; }
+  h1, h2 { text-align: center; }
+  input, textarea { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border: 1px solid #e0b4bf; border-radius: 8px; font-size: 16px; font-family: inherit; }
+  textarea { height: 180px; }
+  button { background: #e07a8f; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 16px; margin: 4px 4px 4px 0; }
+  .carta { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+  .bloqueada { opacity: 0.6; }
+  .texto { margin-top: 10px; white-space: pre-wrap; display: none; }
+  #aviso, #saludo { text-align: center; font-size: 18px; margin-bottom: 14px; }
+  small { color: #9a6b77; }
+</style>
+</head>
+<body>
+<h1>Nuestro buzón 💌</h1>
+
+<div id="pantallaEntrada">
+  <input id="inNombre" placeholder="Tu nombre (distinto al de tu pareja)">
+  <input id="inSala" placeholder="Código de pareja (inventen uno secreto)">
+  <button id="btnEntrar">Entrar</button>
+</div>
+
+<div id="pantallaBuzon" style="display:none">
+  <div id="saludo"></div>
+  <div id="aviso"></div>
+  <button id="btnEscribir">✍️ Escribir carta</button>
+  <button id="btnSalir">Salir</button>
+
+  <div id="formEscribir" style="display:none; margin-top:14px">
+    <input id="inTitulo" placeholder="Título de la carta">
+    <textarea id="inTexto" placeholder="Escribe aquí lo que sientes..."></textarea>
+    <button id="btnEnviar">Enviar 💌</button>
+    <br><small>Tu pareja la podrá abrir mañana.</small>
+  </div>
+
+  <h2>Para ti</h2>
+  <div id="recibidas"></div>
+  <h2>Enviadas por ti</h2>
+  <div id="enviadas"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// CONFIG AQUI (Ctrl+F esto)
+const firebaseConfig = {
+  apiKey: "AIzaSyBLwa0Z182A8A4FTD88EzNMTNDz2h9BI70",
+  authDomain: "nuestro-buzon.firebaseapp.com",
+  projectId: "nuestro-buzon",
+  storageBucket: "nuestro-buzon.firebasestorage.app",
+  messagingSenderId: "431142936272",
+  appId: "1:431142936272:web:72680adfee3a0600c548d5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const cartasRef = collection(db, "cartas");
+
+let yo = "";
+let sala = "";
+let desuscribir = null;
+
+const $ = function (id) { return document.getElementById(id); };
+
+function hoyStr() { return new Date().toLocaleDateString("en-CA"); }
+
+function sumarDia(f) {
+  const d = new Date(f + "T00:00:00");
+  d.setDate(d.getDate() + 1);
+  return d.toLocaleDateString("en-CA");
+}
+
+function entrar(nombre, codigo) {
+  yo = nombre;
+  sala = codigo;
+  localStorage.setItem("buzon", JSON.stringify({ nombre: nombre, codigo: codigo }));
+  $("pantallaEntrada").style.display = "none";
+  $("pantallaBuzon").style.display = "block";
+  $("saludo").textContent = "Hola, " + yo + " 💕";
+  escuchar();
+}
+
+function escuchar() {
+  const q = query(cartasRef, where("sala", "==", sala));
+  desuscribir = onSnapshot(q, function (snap) {
+    const todas = snap.docs.map(function (d) { return d.data(); });
+    pintar(todas);
+  }, function (err) {
+    alert("Error con la base de datos: " + err.message);
+  });
+}
+
+function pintar(todas) {
+  const hoy = hoyStr();
+  const miNombre = yo.toLowerCase();
+  const recibidas = todas.filter(function (c) { return c.de.toLowerCase() !== miNombre; });
+  const enviadas = todas.filter(function (c) { return c.de.toLowerCase() === miNombre; });
+  recibidas.sort(function (a, b) { return b.fecha.localeCompare(a.fecha); });
+  enviadas.sort(function (a, b) { return b.fecha.localeCompare(a.fecha); });
+
+  const contR = $("recibidas");
+  contR.innerHTML = "";
+  let nuevas = 0;
+  recibidas.forEach(function (c, i) {
+    const abierta = sumarDia(c.fecha) <= hoy;
+    const div = document.createElement("div");
+    div.className = "carta" + (abierta ? "" : " bloqueada");
+    if (abierta) {
+      nuevas++;
+      const t = document.createElement("b");
+      t.textContent = "💌 " + c.titulo + " ";
+      const de = document.createElement("small");
+      de.textContent = "de " + c.de + " (" + c.fecha + ")";
+      const btn = document.createElement("button");
+      btn.textContent = "Abrir";
+      const texto = document.createElement("div");
+      texto.className = "texto";
+      texto.textContent = c.texto;
+      btn.onclick = function () { texto.style.display = "block"; btn.style.display = "none"; };
+      div.appendChild(t); div.appendChild(de); div.appendChild(document.createElement("br"));
+      div.appendChild(btn); div.appendChild(texto);
+    } else {
+      div.textContent = "🔒 Una carta de " + c.de + " se abre el " + sumarDia(c.fecha);
+    }
+    contR.appendChild(div);
+  });
+  if (recibidas.length === 0) contR.textContent = "Todavía no hay cartas para ti.";
+
+  const contE = $("enviadas");
+  contE.innerHTML = "";
+  enviadas.forEach(function (c) {
+    const div = document.createElement("div");
+    div.className = "carta";
+    const t = document.createElement("b");
+    t.textContent = "📤 " + c.titulo + " ";
+    const f = document.createElement("small");
+    f.textContent = "(" + c.fecha + ")";
+    const texto = document.createElement("div");
+    texto.style.whiteSpace = "pre-wrap";
+    texto.style.marginTop = "8px";
+    texto.textContent = c.texto;
+    div.appendChild(t); div.appendChild(f); div.appendChild(texto);
+    contE.appendChild(div);
+  });
+  if (enviadas.length === 0) contE.textContent = "Aún no has escrito cartas.";
+
+  $("aviso").textContent = nuevas > 0 ? "Tienes " + nuevas + " carta(s) 💌" : "Aún no hay cartas nuevas";
+}
+
+$("btnEntrar").onclick = function () {
+  const n = $("inNombre").value.trim();
+  const c = $("inSala").value.trim().toLowerCase();
+  if (!n || !c) { alert("Pon tu nombre y el código de pareja"); return; }
+  entrar(n, c);
+};
+
+$("btnEscribir").onclick = function () {
+  const f = $("formEscribir");
+  f.style.display = f.style.display === "none" ? "block" : "none";
+};
+
+$("btnEnviar").onclick = async function () {
+  const titulo = $("inTitulo").value.trim();
+  const texto = $("inTexto").value.trim();
+  if (!titulo || !texto) { alert("Falta el título o la carta"); return; }
+  try {
+    await addDoc(cartasRef, { sala: sala, de: yo, titulo: titulo, texto: texto, fecha: hoyStr(), creada: serverTimestamp() });
+    $("inTitulo").value = "";
+    $("inTexto").value = "";
+    $("formEscribir").style.display = "none";
+    alert("Carta enviada 💌");
+  } catch (e) {
+    alert("No se pudo enviar: " + e.message);
+  }
+};
+
+$("btnSalir").onclick = function () {
+  localStorage.removeItem("buzon");
+  if (desuscribir) desuscribir();
+  location.reload();
+};
+
+const guardado = localStorage.getItem("buzon");
+if (guardado) {
+  const g = JSON.parse(guardado);
+  entrar(g.nombre, g.codigo);
+}
+</script>
+</body>
+</html>

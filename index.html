@@ -5,20 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nuestro buzón 💌</title>
 <style>
-  body { font-family: Georgia, serif; background: #fdf0f3; margin: 0; padding: 20px; color: #4a2c35; max-width: 600px; margin-left: auto; margin-right: auto; }
-  h1, h2 { text-align: center; }
-  input, textarea { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border: 1px solid #e0b4bf; border-radius: 8px; font-size: 16px; font-family: inherit; }
+  :root { --rojo: #c0192c; --rojo-oscuro: #7a0f1c; --rosa: #fde8ea; --borde: #f1b3ba; }
+  body { font-family: Georgia, serif; background: var(--rosa); margin: 0; padding: 20px; color: #4a1520; max-width: 600px; margin-left: auto; margin-right: auto; }
+  h1, h2 { text-align: center; color: var(--rojo-oscuro); }
+  input, textarea { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; font-family: inherit; background: #fffafa; }
   textarea { height: 180px; }
-  button { background: #e07a8f; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 16px; margin: 4px 4px 4px 0; }
-  .carta { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-  .bloqueada { opacity: 0.6; }
+  button { background: var(--rojo); color: white; border: none; border-radius: 10px; padding: 10px 16px; font-size: 16px; margin: 4px 4px 4px 0; transition: transform .15s; }
+  button:active { transform: scale(0.92); }
+  .carta { background: white; border: 1px solid var(--borde); border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 3px 8px rgba(122,15,28,0.12); animation: aparecer .5s ease; }
+  .bloqueada { opacity: 0.65; }
   .texto { margin-top: 10px; white-space: pre-wrap; display: none; }
+  .texto.abierto { display: block; animation: aparecer .8s ease; }
   #aviso, #saludo { text-align: center; font-size: 18px; margin-bottom: 14px; }
-  small { color: #9a6b77; }
+  small { color: #a05a64; }
+
+  .gato { display: inline-block; animation: meneo 2s ease-in-out infinite; }
+  .latido { display: inline-block; animation: latido 1.2s ease-in-out infinite; }
+
+  #sellos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 30px; }
+  .sello { background: #f4dfe1; border: 2px dashed var(--borde); border-radius: 12px; padding: 10px 4px; text-align: center; font-size: 12px; filter: grayscale(1); opacity: .6; }
+  .sello .ico { font-size: 34px; }
+  .sello.ganado { background: white; border: 2px dashed var(--rojo); filter: none; opacity: 1; animation: pop .6s ease; }
+
+  .pata { position: fixed; bottom: -50px; opacity: .13; pointer-events: none; z-index: -1; animation: subir linear infinite; }
+
+  @keyframes aparecer { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes meneo { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+  @keyframes latido { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+  @keyframes pop { 0% { transform: scale(0.5); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  @keyframes subir { from { transform: translateY(0) rotate(0deg); } to { transform: translateY(-115vh) rotate(30deg); } }
 </style>
 </head>
 <body>
-<h1>Nuestro buzón 💌</h1>
+<h1><span class="gato">🐱</span> Nuestro buzón <span class="latido">❤️</span></h1>
 
 <div id="pantallaEntrada">
   <input id="inNombre" placeholder="Tu nombre (distinto al de tu pareja)">
@@ -39,7 +58,10 @@
     <br><small>Tu pareja la podrá abrir mañana.</small>
   </div>
 
-  <h2>Para ti</h2>
+  <h2 id="tituloSellos">Mis sellos</h2>
+  <div id="sellos"></div>
+
+  <h2>Para ti 🐾</h2>
   <div id="recibidas"></div>
   <h2>Enviadas por ti</h2>
   <div id="enviadas"></div>
@@ -59,6 +81,18 @@ const firebaseConfig = {
   appId: "1:431142936272:web:72680adfee3a0600c548d5"
 };
 
+// FECHA DE ANIVERSARIO (Ctrl+F esto)
+const ANIVERSARIO = "2026-10-20";
+
+// SELLOS AQUI (Ctrl+F esto para agregar sellos nuevos)
+const SELLOS = [
+  { icono: "💌", nombre: "Primera carta enviada", ok: function (c) { return c.enviadas >= 1; } },
+  { icono: "📬", nombre: "Primera carta recibida", ok: function (c) { return c.abiertas >= 1; } },
+  { icono: "🐱", nombre: "Cinco cartas enviadas", ok: function (c) { return c.enviadas >= 5; } },
+  { icono: "🎨", nombre: "Diez cartas enviadas", ok: function (c) { return c.enviadas >= 10; } },
+  { icono: "❤️", nombre: "Un mes juntas", ok: function (c) { return c.hoy >= ANIVERSARIO; } }
+];
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const cartasRef = collection(db, "cartas");
@@ -75,6 +109,18 @@ function sumarDia(f) {
   const d = new Date(f + "T00:00:00");
   d.setDate(d.getDate() + 1);
   return d.toLocaleDateString("en-CA");
+}
+
+// HUELLITAS DE FONDO (Ctrl+F esto)
+for (let i = 0; i < 8; i++) {
+  const p = document.createElement("span");
+  p.className = "pata";
+  p.textContent = "🐾";
+  p.style.left = (Math.random() * 95) + "%";
+  p.style.fontSize = (22 + Math.random() * 20) + "px";
+  p.style.animationDuration = (14 + Math.random() * 12) + "s";
+  p.style.animationDelay = "-" + (Math.random() * 20) + "s";
+  document.body.appendChild(p);
 }
 
 function entrar(nombre, codigo) {
@@ -97,6 +143,21 @@ function escuchar() {
   });
 }
 
+function pintarSellos(ctx) {
+  const cont = $("sellos");
+  cont.innerHTML = "";
+  let ganados = 0;
+  SELLOS.forEach(function (s) {
+    const ok = s.ok(ctx);
+    if (ok) ganados++;
+    const d = document.createElement("div");
+    d.className = "sello" + (ok ? " ganado" : "");
+    d.innerHTML = "<div class='ico'>" + (ok ? s.icono : "🔒") + "</div><div>" + s.nombre + "</div>";
+    cont.appendChild(d);
+  });
+  $("tituloSellos").textContent = "Mis sellos (" + ganados + "/" + SELLOS.length + ")";
+}
+
 function pintar(todas) {
   const hoy = hoyStr();
   const miNombre = yo.toLowerCase();
@@ -108,7 +169,7 @@ function pintar(todas) {
   const contR = $("recibidas");
   contR.innerHTML = "";
   let nuevas = 0;
-  recibidas.forEach(function (c, i) {
+  recibidas.forEach(function (c) {
     const abierta = sumarDia(c.fecha) <= hoy;
     const div = document.createElement("div");
     div.className = "carta" + (abierta ? "" : " bloqueada");
@@ -119,11 +180,11 @@ function pintar(todas) {
       const de = document.createElement("small");
       de.textContent = "de " + c.de + " (" + c.fecha + ")";
       const btn = document.createElement("button");
-      btn.textContent = "Abrir";
+      btn.textContent = "Abrir 💌";
       const texto = document.createElement("div");
       texto.className = "texto";
       texto.textContent = c.texto;
-      btn.onclick = function () { texto.style.display = "block"; btn.style.display = "none"; };
+      btn.onclick = function () { texto.className = "texto abierto"; btn.style.display = "none"; };
       div.appendChild(t); div.appendChild(de); div.appendChild(document.createElement("br"));
       div.appendChild(btn); div.appendChild(texto);
     } else {
@@ -151,7 +212,9 @@ function pintar(todas) {
   });
   if (enviadas.length === 0) contE.textContent = "Aún no has escrito cartas.";
 
-  $("aviso").textContent = nuevas > 0 ? "Tienes " + nuevas + " carta(s) 💌" : "Aún no hay cartas nuevas";
+  $("aviso").textContent = nuevas > 0 ? "Tienes " + nuevas + " carta(s) 💌🐾" : "Aún no hay cartas nuevas";
+
+  pintarSellos({ enviadas: enviadas.length, abiertas: nuevas, hoy: hoy });
 }
 
 $("btnEntrar").onclick = function () {

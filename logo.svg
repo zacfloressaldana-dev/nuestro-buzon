@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <rect width="400" height="400" rx="80" fill="#fde8ea"/>
+  <path d="M110 170 L120 70 L195 125 Z" fill="#c0192c"/>
+  <path d="M290 170 L280 70 L205 125 Z" fill="#c0192c"/>
+  <path d="M127 140 L131 97 L163 120 Z" fill="#f7a8b0"/>
+  <path d="M273 140 L269 97 L237 120 Z" fill="#f7a8b0"/>
+  <ellipse cx="200" cy="215" rx="105" ry="90" fill="#c0192c"/>
+  <path d="M200 178 C180 163 188 148 200 158 C212 148 220 163 200 178 Z" fill="#fde8ea"/>
+  <path d="M148 207 Q164 187 180 207" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
+  <path d="M220 207 Q236 187 252 207" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
+  <ellipse cx="140" cy="237" rx="18" ry="11" fill="#ff8a96" opacity="0.8"/>
+  <ellipse cx="260" cy="237" rx="18" ry="11" fill="#ff8a96" opacity="0.8"/>
+  <path d="M192 230 L208 230 L200 240 Z" fill="#ffffff"/>
+  <path d="M200 240 Q200 254 186 254 M200 240 Q200 254 214 254" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <rect x="268" y="272" width="72" height="48" rx="6" fill="#ffffff" stroke="#7a0f1c" stroke-width="4"/>
+  <path d="M268 276 L304 302 L340 276" fill="none" stroke="#7a0f1c" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M304 314 C294 306 298 298 304 302 C310 298 314 306 304 314 Z" fill="#c0192c"/>
+  <text x="200" y="373" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="44" font-weight="700" fill="#7a0f1c">Minimori</text>
+</svg>

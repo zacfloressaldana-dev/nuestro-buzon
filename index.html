@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nuestro buzón 💌</title>
+<title>Minimori 💌</title>
 <style>
   :root { --rojo: #c0192c; --rojo-oscuro: #7a0f1c; --rosa: #fde8ea; --borde: #f1b3ba; }
   body { font-family: Georgia, serif; background: var(--rosa); margin: 0; padding: 20px; color: #4a1520; max-width: 600px; margin-left: auto; margin-right: auto; }
@@ -40,6 +40,16 @@
   #herr { text-align: center; }
   #grosor { width: 70%; padding: 0; margin: 8px 0; }
 
+  #tabs button { font-size: 13px; }
+  #mensajes { height: 55vh; overflow-y: auto; background: white; border: 2px solid var(--borde); border-radius: 14px; padding: 10px; margin-bottom: 10px; }
+  .burbuja { max-width: 80%; padding: 8px 12px; border-radius: 14px; margin: 6px 0; line-height: 1.35; word-wrap: break-word; animation: aparecer .3s ease; }
+  .burbuja.mia { background: var(--rojo); color: white; margin-left: auto; border-bottom-right-radius: 4px; }
+  .burbuja.otra { background: #f6dde0; border-bottom-left-radius: 4px; }
+  .burbuja.mia small { color: #ffd6da; }
+  .burbuja .hora { font-size: 10px; opacity: .7; text-align: right; margin-top: 2px; }
+  #barraChat { display: flex; gap: 6px; }
+  #barraChat input { flex: 1; width: auto; margin: 0; }
+  #barraChat button { margin: 0; }
   @keyframes aparecer { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes meneo { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
   @keyframes latido { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
@@ -48,7 +58,7 @@
 </style>
 </head>
 <body>
-<h1><span class="gato">🐱</span> Nuestro buzón <span class="latido">❤️</span></h1>
+<h1><span class="gato">🐱</span> Minimori <span class="latido">❤️</span></h1>
 
 <div id="pantallaAuth">
   <input id="inEmail" type="email" placeholder="Tu correo">
@@ -83,7 +93,16 @@
 
   <div id="tabs">
     <button id="tabCartas" class="activa">💌 Cartas</button>
+    <button id="tabChat">💬 Chat</button>
     <button id="tabLienzo">🎨 Lienzo</button>
+  <div id="vistaChat" style="display:none">
+    <h2>Chat 💬</h2>
+    <div id="mensajes"></div>
+    <div id="barraChat">
+      <input id="inMensaje" placeholder="Escribe un mensaje..." maxlength="500" autocomplete="off">
+      <button id="btnMandar">➤</button>
+    </div>
+  </div>
     <button id="tabLectura">📖 Lectura</button>
   </div>
 
@@ -171,6 +190,7 @@ const db = getFirestore(app);
 const cartasRef = collection(db, "cartas");
 const trazosRef = collection(db, "trazos");
 const salasRef = collection(db, "salas");
+const mensajesRef = collection(db, "mensajes");
 
 let uid = "";
 let yoNombre = "";
@@ -178,6 +198,7 @@ let salaCodigo = "";
 let unsubSalas = null;
 let unsubCartas = null;
 let unsubTrazos = null;
+let unsubChat = null;
 
 const $ = function (id) { return document.getElementById(id); };
 
@@ -209,15 +230,17 @@ function mostrarPantalla(id) {
 }
 
 // PESTAÑAS (Ctrl+F esto)
-const VISTAS = { cartas: "vistaCartas", lienzo: "vistaLienzo", lectura: "vistaLectura" };
-const TABS = { cartas: "tabCartas", lienzo: "tabLienzo", lectura: "tabLectura" };
+const VISTAS = { cartas: "vistaCartas", chat: "vistaChat", lienzo: "vistaLienzo", lectura: "vistaLectura" };
+const TABS = { cartas: "tabCartas", chat: "tabChat", lienzo: "tabLienzo", lectura: "tabLectura" };
 function ver(nombre) {
   Object.keys(VISTAS).forEach(function (k) {
     $(VISTAS[k]).style.display = k === nombre ? "block" : "none";
     $(TABS[k]).className = k === nombre ? "activa" : "";
   });
+  if (nombre === "chat") { const c = $("mensajes"); c.scrollTop = c.scrollHeight; }
 }
 $("tabCartas").onclick = function () { ver("cartas"); };
+$("tabChat").onclick = function () { ver("chat"); };
 $("tabLienzo").onclick = function () { ver("lienzo"); };
 $("tabLectura").onclick = function () { ver("lectura"); };
 
@@ -450,6 +473,8 @@ function codigoNuevo() {
 function salirDeSala() {
   if (unsubCartas) { unsubCartas(); unsubCartas = null; }
   if (unsubTrazos) { unsubTrazos(); unsubTrazos = null; }
+  if (unsubChat) { unsubChat(); unsubChat = null; }
+  $("mensajes").innerHTML = "";
   trazos = [];
   actual = null;
   dibujando = false;
@@ -522,6 +547,7 @@ function entrarSala(codigo, nombre) {
   $("salaInfo").textContent = "🏠 " + nombre + " · código: " + codigo;
   ver("cartas");
   escuchar();
+  escucharChat();
 }
 
 $("btnVolverSalas").onclick = mostrarSalas;
@@ -650,6 +676,64 @@ $("btnEnviar").onclick = async function () {
     alert("No se pudo enviar: " + e.message);
   }
 };
+
+// CHAT (Ctrl+F esto)
+function pintarMensajes(lista) {
+  const cont = $("mensajes");
+  const alFinal = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 80;
+  cont.innerHTML = "";
+  if (lista.length === 0) {
+    cont.textContent = "Aún no hay mensajes. ¡Escribe el primero! 💬";
+    return;
+  }
+  lista.forEach(function (m) {
+    const mio = m.uid === uid;
+    const burbuja = document.createElement("div");
+    burbuja.className = "burbuja " + (mio ? "mia" : "otra");
+    if (!mio) {
+      const n = document.createElement("small");
+      n.textContent = m.de;
+      burbuja.appendChild(n);
+      burbuja.appendChild(document.createElement("br"));
+    }
+    const t = document.createElement("span");
+    t.textContent = m.texto;
+    burbuja.appendChild(t);
+    const h = document.createElement("div");
+    h.className = "hora";
+    h.textContent = new Date(m.t).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    burbuja.appendChild(h);
+    cont.appendChild(burbuja);
+  });
+  if (alFinal) cont.scrollTop = cont.scrollHeight;
+}
+
+function escucharChat() {
+  const q = query(mensajesRef, where("sala", "==", salaCodigo));
+  unsubChat = onSnapshot(q, function (snap) {
+    const lista = snap.docs.map(function (d) { return d.data(); });
+    lista.sort(function (a, b) { return a.t - b.t; });
+    pintarMensajes(lista.slice(-200));
+  }, function (err) {
+    alert("Error con el chat: " + err.message);
+  });
+}
+
+async function mandarMensaje() {
+  const texto = $("inMensaje").value.trim();
+  if (!texto || !salaCodigo) return;
+  $("inMensaje").value = "";
+  try {
+    await addDoc(mensajesRef, { sala: salaCodigo, uid: uid, de: yoNombre, texto: texto, t: Date.now() });
+  } catch (e) {
+    $("inMensaje").value = texto;
+    alert("No se pudo mandar: " + e.message);
+  }
+}
+$("btnMandar").onclick = mandarMensaje;
+$("inMensaje").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") { e.preventDefault(); mandarMensaje(); }
+});
 
 // ARRANQUE (Ctrl+F esto)
 localStorage.removeItem("buzon");

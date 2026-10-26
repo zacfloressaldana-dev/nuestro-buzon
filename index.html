@@ -14,10 +14,14 @@
   button:active { transform: scale(0.92); }
   .carta { background: white; border: 1px solid var(--borde); border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 3px 8px rgba(122,15,28,0.12); animation: aparecer .5s ease; }
   .bloqueada { opacity: 0.65; }
-  .texto { margin-top: 10px; white-space: pre-wrap; display: none; }
+  .texto { margin-top: 10px; white-space: pre-wrap; display: none; line-height: 1.5; }
   .texto.abierto { display: block; animation: aparecer .8s ease; }
-  #aviso, #saludo { text-align: center; font-size: 18px; margin-bottom: 14px; }
+  #aviso, #saludo, #saludoSalas, #salaInfo { text-align: center; font-size: 18px; margin-bottom: 14px; }
   small { color: #a05a64; }
+
+  #tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+  #tabs button { flex: 1; margin: 0; background: #e9a3ab; font-size: 15px; padding: 10px 4px; }
+  #tabs button.activa { background: var(--rojo); }
 
   .gato { display: inline-block; animation: meneo 2s ease-in-out infinite; }
   .latido { display: inline-block; animation: latido 1.2s ease-in-out infinite; }
@@ -29,6 +33,13 @@
 
   .pata { position: fixed; bottom: -50px; opacity: .13; pointer-events: none; z-index: -1; animation: subir linear infinite; }
 
+  #lienzo { width: 100%; height: auto; background: white; border: 2px solid var(--borde); border-radius: 14px; touch-action: none; display: block; }
+  #paleta { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0; }
+  .color { width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 1px #c9a0a6; margin: 0; padding: 0; }
+  .color.elegido { box-shadow: 0 0 0 3px var(--rojo-oscuro); transform: scale(1.15); }
+  #herr { text-align: center; }
+  #grosor { width: 70%; padding: 0; margin: 8px 0; }
+
   @keyframes aparecer { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes meneo { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
   @keyframes latido { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
@@ -39,37 +50,86 @@
 <body>
 <h1><span class="gato">🐱</span> Nuestro buzón <span class="latido">❤️</span></h1>
 
-<div id="pantallaEntrada">
-  <input id="inNombre" placeholder="Tu nombre (distinto al de tu pareja)">
-  <input id="inSala" placeholder="Código de pareja (inventen uno secreto)">
+<div id="pantallaAuth">
+  <input id="inEmail" type="email" placeholder="Tu correo">
+  <input id="inPass" type="password" placeholder="Contraseña (mínimo 6 caracteres)">
+  <input id="inNombre" placeholder="Tu nombre o apodo (solo para crear cuenta)">
   <button id="btnEntrar">Entrar</button>
+  <button id="btnRegistro">Crear cuenta</button>
+  <button id="btnOlvide">Olvidé mi contraseña</button>
+</div>
+
+<div id="pantallaSalas" style="display:none">
+  <div id="saludoSalas"></div>
+  <h2>Mis salas</h2>
+  <div id="listaSalas"></div>
+  <h2>Crear una sala</h2>
+  <input id="inNombreSala" placeholder="Nombre de la sala (ej. Nosotras)">
+  <button id="btnCrearSala">Crear sala</button>
+  <h2>Unirme con código</h2>
+  <input id="inCodigo" placeholder="Código que te pasaron">
+  <button id="btnUnirme">Unirme</button>
+  <br><br>
+  <button id="btnCerrarSesion">Cerrar sesión</button>
 </div>
 
 <div id="pantallaBuzon" style="display:none">
   <div id="saludo"></div>
-  <div id="aviso"></div>
-  <button id="btnEscribir">✍️ Escribir carta</button>
-  <button id="btnSalir">Salir</button>
-
-  <div id="formEscribir" style="display:none; margin-top:14px">
-    <input id="inTitulo" placeholder="Título de la carta">
-    <textarea id="inTexto" placeholder="Escribe aquí lo que sientes..."></textarea>
-    <button id="btnEnviar">Enviar 💌</button>
-    <br><small>Tu pareja la podrá abrir mañana.</small>
+  <div id="salaInfo"></div>
+  <div style="text-align:center">
+    <button id="btnVolverSalas">← Mis salas</button>
+    <button id="btnCopiar">📋 Copiar código</button>
   </div>
 
-  <h2 id="tituloSellos">Mis sellos</h2>
-  <div id="sellos"></div>
+  <div id="tabs">
+    <button id="tabCartas" class="activa">💌 Cartas</button>
+    <button id="tabLienzo">🎨 Lienzo</button>
+    <button id="tabLectura">📖 Lectura</button>
+  </div>
 
-  <h2>Para ti 🐾</h2>
-  <div id="recibidas"></div>
-  <h2>Enviadas por ti</h2>
-  <div id="enviadas"></div>
+  <div id="vistaCartas">
+    <div id="aviso"></div>
+    <button id="btnEscribir">✍️ Escribir carta</button>
+
+    <div id="formEscribir" style="display:none; margin-top:14px">
+      <input id="inTitulo" placeholder="Título de la carta">
+      <textarea id="inTexto" placeholder="Escribe aquí lo que sientes..."></textarea>
+      <button id="btnEnviar">Enviar 💌</button>
+      <br><small>Los demás de la sala la podrán abrir mañana.</small>
+    </div>
+
+    <h2 id="tituloSellos">Mis sellos</h2>
+    <div id="sellos"></div>
+
+    <h2>Para ti 🐾</h2>
+    <div id="recibidas"></div>
+    <h2>Enviadas por ti</h2>
+    <div id="enviadas"></div>
+  </div>
+
+  <div id="vistaLienzo" style="display:none">
+    <small>Lo que una persona dibuje, las demás lo ven al instante 🎨</small>
+    <canvas id="lienzo" width="800" height="500"></canvas>
+    <div id="paleta"></div>
+    <div id="herr">
+      <input type="range" id="grosor" min="2" max="30" value="5"><br>
+      <button id="btnDeshacer">↩️ Deshacer</button>
+      <button id="btnBorrador">🧽 Borrador</button>
+      <button id="btnLimpiar">🗑️ Limpiar todo</button>
+      <button id="btnDescargar">🖼️ Descargar</button>
+    </div>
+  </div>
+
+  <div id="vistaLectura" style="display:none">
+    <h2>Rincón de lectura 📖</h2>
+    <div id="listaLecturas"></div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, where, serverTimestamp, doc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 // CONFIG AQUI (Ctrl+F esto)
 const firebaseConfig = {
@@ -93,13 +153,31 @@ const SELLOS = [
   { icono: "❤️", nombre: "Un mes juntas", ok: function (c) { return c.hoy >= ANIVERSARIO; } }
 ];
 
+// LECTURAS AQUI (Ctrl+F esto para agregar cuentos o poemas)
+const LECTURAS = [
+  {
+    titulo: "El gatito que guardaba cartas 🐱",
+    texto: `Había una vez un gatito que vivía debajo de una ventana. Todas las noches encontraba cartas que el viento dejaba caer, y las guardaba en una cajita de cartón.
+
+Nadie sabía por qué las guardaba. Un día alguien le preguntó, y el gatito contestó: "Porque cada carta es alguien diciendo que le importa otra persona, y eso merece cuidarse".
+
+Desde entonces, la cajita nunca estuvo vacía.`
+  }
+];
+
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const cartasRef = collection(db, "cartas");
+const trazosRef = collection(db, "trazos");
+const salasRef = collection(db, "salas");
 
-let yo = "";
-let sala = "";
-let desuscribir = null;
+let uid = "";
+let yoNombre = "";
+let salaCodigo = "";
+let unsubSalas = null;
+let unsubCartas = null;
+let unsubTrazos = null;
 
 const $ = function (id) { return document.getElementById(id); };
 
@@ -123,32 +201,369 @@ for (let i = 0; i < 8; i++) {
   document.body.appendChild(p);
 }
 
-function entrar(nombre, codigo) {
-  yo = nombre;
-  sala = codigo;
-  localStorage.setItem("buzon", JSON.stringify({ nombre: nombre, codigo: codigo }));
-  $("pantallaEntrada").style.display = "none";
-  $("pantallaBuzon").style.display = "block";
-  $("saludo").textContent = "Hola, " + yo + " 💕";
-  escuchar();
-}
-
-function escuchar() {
-  const q = query(cartasRef, where("sala", "==", sala));
-  desuscribir = onSnapshot(q, function (snap) {
-    const todas = snap.docs.map(function (d) { return d.data(); });
-    pintar(todas);
-  }, function (err) {
-    alert("Error con la base de datos: " + err.message);
+// PANTALLAS (Ctrl+F esto)
+function mostrarPantalla(id) {
+  ["pantallaAuth", "pantallaSalas", "pantallaBuzon"].forEach(function (p) {
+    $(p).style.display = p === id ? "block" : "none";
   });
 }
 
-function pintarSellos(ctx) {
+// PESTAÑAS (Ctrl+F esto)
+const VISTAS = { cartas: "vistaCartas", lienzo: "vistaLienzo", lectura: "vistaLectura" };
+const TABS = { cartas: "tabCartas", lienzo: "tabLienzo", lectura: "tabLectura" };
+function ver(nombre) {
+  Object.keys(VISTAS).forEach(function (k) {
+    $(VISTAS[k]).style.display = k === nombre ? "block" : "none";
+    $(TABS[k]).className = k === nombre ? "activa" : "";
+  });
+}
+$("tabCartas").onclick = function () { ver("cartas"); };
+$("tabLienzo").onclick = function () { ver("lienzo"); };
+$("tabLectura").onclick = function () { ver("lectura"); };
+
+// LECTURAS (Ctrl+F esto)
+function pintarLecturas() {
+  const cont = $("listaLecturas");
+  cont.innerHTML = "";
+  LECTURAS.forEach(function (l) {
+    const div = document.createElement("div");
+    div.className = "carta";
+    const t = document.createElement("b");
+    t.textContent = l.titulo;
+    const br = document.createElement("br");
+    const btn = document.createElement("button");
+    btn.textContent = "Leer 📖";
+    const texto = document.createElement("div");
+    texto.className = "texto";
+    texto.textContent = l.texto;
+    btn.onclick = function () {
+      const abierto = texto.className === "texto abierto";
+      texto.className = abierto ? "texto" : "texto abierto";
+      btn.textContent = abierto ? "Leer 📖" : "Cerrar";
+    };
+    div.appendChild(t); div.appendChild(br); div.appendChild(btn); div.appendChild(texto);
+    cont.appendChild(div);
+  });
+}
+pintarLecturas();
+
+// LIENZO (Ctrl+F esto)
+const canvas = $("lienzo");
+const ctx = canvas.getContext("2d");
+const W = canvas.width;
+const H = canvas.height;
+const COLORES = ["#c0192c", "#000000", "#1e63d6", "#1f9d55", "#f2b705", "#ff7aa8", "#7b3fb5", "#8b5a2b"];
+let colorActual = COLORES[0];
+let trazos = [];
+let actual = null;
+let dibujando = false;
+
+function trazarSegmento(color, grosor, x1, y1, x2, y2) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = grosor;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+
+function dibujarTrazo(t) {
+  const p = t.puntos;
+  if (p.length < 2) return;
+  if (p.length === 2) {
+    trazarSegmento(t.color, t.grosor, p[0] * W, p[1] * H, p[0] * W + 0.1, p[1] * H);
+    return;
+  }
+  ctx.strokeStyle = t.color;
+  ctx.lineWidth = t.grosor;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(p[0] * W, p[1] * H);
+  for (let i = 2; i < p.length; i += 2) ctx.lineTo(p[i] * W, p[i + 1] * H);
+  ctx.stroke();
+}
+
+function redibujar() {
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+  trazos.forEach(dibujarTrazo);
+  if (actual) dibujarTrazo(actual);
+}
+redibujar();
+
+function posicion(e) {
+  const r = canvas.getBoundingClientRect();
+  return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+}
+function redondear(n) { return Math.round(n * 1000) / 1000; }
+
+canvas.addEventListener("pointerdown", function (e) {
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  dibujando = true;
+  const p = posicion(e);
+  actual = { color: colorActual, grosor: Number($("grosor").value), puntos: [redondear(p[0]), redondear(p[1])] };
+  redibujar();
+});
+
+canvas.addEventListener("pointermove", function (e) {
+  if (!dibujando || !actual) return;
+  e.preventDefault();
+  const p = posicion(e);
+  const n = actual.puntos.length;
+  const px = actual.puntos[n - 2];
+  const py = actual.puntos[n - 1];
+  if (Math.abs(p[0] - px) < 0.002 && Math.abs(p[1] - py) < 0.002) return;
+  if (n >= 3000) return;
+  actual.puntos.push(redondear(p[0]), redondear(p[1]));
+  trazarSegmento(actual.color, actual.grosor, px * W, py * H, p[0] * W, p[1] * H);
+});
+
+async function terminarTrazo() {
+  if (!dibujando || !actual) return;
+  dibujando = false;
+  const t = actual;
+  actual = null;
+  if (!salaCodigo) return;
+  try {
+    await addDoc(trazosRef, { sala: salaCodigo, uid: uid, de: yoNombre, color: t.color, grosor: t.grosor, puntos: t.puntos, t: Date.now() });
+  } catch (err) {
+    alert("No se pudo guardar el trazo: " + err.message);
+    redibujar();
+  }
+}
+canvas.addEventListener("pointerup", terminarTrazo);
+canvas.addEventListener("pointercancel", terminarTrazo);
+
+// PALETA (Ctrl+F esto)
+function pintarPaleta() {
+  const cont = $("paleta");
+  cont.innerHTML = "";
+  COLORES.forEach(function (c) {
+    const b = document.createElement("button");
+    b.className = "color" + (c === colorActual ? " elegido" : "");
+    b.style.background = c;
+    b.onclick = function () { colorActual = c; pintarPaleta(); };
+    cont.appendChild(b);
+  });
+}
+pintarPaleta();
+
+$("btnBorrador").onclick = function () { colorActual = "#ffffff"; pintarPaleta(); };
+
+$("btnDeshacer").onclick = async function () {
+  const mios = trazos.filter(function (t) { return t.uid === uid; });
+  if (mios.length === 0) return;
+  const ultimo = mios[mios.length - 1];
+  try { await deleteDoc(ultimo.ref); } catch (err) { alert("No se pudo deshacer: " + err.message); }
+};
+
+$("btnLimpiar").onclick = async function () {
+  if (!confirm("¿Seguro que quieres borrar TODO el lienzo? Se borra para toda la sala.")) return;
+  try {
+    await Promise.all(trazos.map(function (t) { return deleteDoc(t.ref); }));
+  } catch (err) {
+    alert("No se pudo limpiar: " + err.message);
+  }
+};
+
+$("btnDescargar").onclick = function () {
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = "nuestro-dibujo.png";
+  a.click();
+};
+
+// CUENTAS (Ctrl+F esto)
+function mensajeError(e) {
+  const m = {
+    "auth/invalid-email": "El correo no es válido.",
+    "auth/missing-password": "Falta la contraseña.",
+    "auth/weak-password": "La contraseña es muy corta (mínimo 6 caracteres).",
+    "auth/email-already-in-use": "Ese correo ya tiene una cuenta.",
+    "auth/invalid-credential": "Correo o contraseña incorrectos.",
+    "auth/user-not-found": "No existe una cuenta con ese correo.",
+    "auth/wrong-password": "Contraseña incorrecta.",
+    "auth/too-many-requests": "Demasiados intentos, espera un rato.",
+    "auth/network-request-failed": "No hay conexión a internet."
+  };
+  return m[e.code] || e.message;
+}
+
+function pintarSaludo() {
+  $("saludoSalas").textContent = "Hola, " + yoNombre + " 💕";
+  $("saludo").textContent = "Hola, " + yoNombre + " 💕";
+}
+
+$("btnEntrar").onclick = async function () {
+  const email = $("inEmail").value.trim();
+  const pass = $("inPass").value;
+  if (!email || !pass) { alert("Pon tu correo y tu contraseña"); return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    alert(mensajeError(e));
+  }
+};
+
+$("btnRegistro").onclick = async function () {
+  const email = $("inEmail").value.trim();
+  const pass = $("inPass").value;
+  const nombre = $("inNombre").value.trim();
+  if (!email || !pass || !nombre) { alert("Para crear cuenta pon correo, contraseña y tu nombre o apodo"); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: nombre });
+    yoNombre = nombre;
+    pintarSaludo();
+  } catch (e) {
+    alert(mensajeError(e));
+  }
+};
+
+$("btnOlvide").onclick = async function () {
+  const email = $("inEmail").value.trim();
+  if (!email) { alert("Escribe tu correo arriba y vuelve a darle"); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Te mandé un correo para cambiar tu contraseña. Revisa también spam.");
+  } catch (e) {
+    alert(mensajeError(e));
+  }
+};
+
+$("btnCerrarSesion").onclick = function () { signOut(auth); };
+
+// SALAS (Ctrl+F esto)
+function codigoNuevo() {
+  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let c = "";
+  for (let i = 0; i < bytes.length; i++) c += letras[bytes[i] % letras.length];
+  return c;
+}
+
+function salirDeSala() {
+  if (unsubCartas) { unsubCartas(); unsubCartas = null; }
+  if (unsubTrazos) { unsubTrazos(); unsubTrazos = null; }
+  trazos = [];
+  actual = null;
+  dibujando = false;
+  salaCodigo = "";
+  redibujar();
+}
+
+function mostrarSalas() {
+  salirDeSala();
+  mostrarPantalla("pantallaSalas");
+  pintarSaludo();
+  if (unsubSalas) unsubSalas();
+  const q = query(salasRef, where("miembros", "array-contains", uid));
+  unsubSalas = onSnapshot(q, function (snap) {
+    const cont = $("listaSalas");
+    cont.innerHTML = "";
+    if (snap.empty) { cont.textContent = "Todavía no estás en ninguna sala."; return; }
+    snap.docs.forEach(function (d) {
+      const s = d.data();
+      const div = document.createElement("div");
+      div.className = "carta";
+      const t = document.createElement("b");
+      t.textContent = "🏠 " + s.nombre + " ";
+      const c = document.createElement("small");
+      c.textContent = "(código: " + d.id + ")";
+      const btn = document.createElement("button");
+      btn.textContent = "Entrar";
+      btn.onclick = function () { entrarSala(d.id, s.nombre); };
+      div.appendChild(t); div.appendChild(c); div.appendChild(document.createElement("br")); div.appendChild(btn);
+      cont.appendChild(div);
+    });
+  }, function (err) {
+    alert("Error al cargar tus salas: " + err.message);
+  });
+}
+
+$("btnCrearSala").onclick = async function () {
+  const nombre = $("inNombreSala").value.trim();
+  if (!nombre) { alert("Ponle un nombre a la sala"); return; }
+  const codigo = codigoNuevo();
+  const nombres = {};
+  nombres[uid] = yoNombre;
+  try {
+    await setDoc(doc(db, "salas", codigo), { nombre: nombre, miembros: [uid], nombres: nombres, creada: serverTimestamp() });
+    $("inNombreSala").value = "";
+    alert("Sala creada 🏠\nCódigo para invitar: " + codigo);
+  } catch (e) {
+    alert("No se pudo crear la sala: " + e.message);
+  }
+};
+
+$("btnUnirme").onclick = async function () {
+  const codigo = $("inCodigo").value.trim().toUpperCase();
+  if (!codigo) { alert("Escribe el código"); return; }
+  const cambios = { miembros: arrayUnion(uid) };
+  cambios["nombres." + uid] = yoNombre;
+  try {
+    await updateDoc(doc(db, "salas", codigo), cambios);
+    $("inCodigo").value = "";
+    alert("¡Listo, ya estás en la sala! 🎉");
+  } catch (e) {
+    alert("No se pudo entrar: revisa que el código esté bien escrito.");
+  }
+};
+
+function entrarSala(codigo, nombre) {
+  salaCodigo = codigo;
+  mostrarPantalla("pantallaBuzon");
+  pintarSaludo();
+  $("salaInfo").textContent = "🏠 " + nombre + " · código: " + codigo;
+  ver("cartas");
+  escuchar();
+}
+
+$("btnVolverSalas").onclick = mostrarSalas;
+
+$("btnCopiar").onclick = async function () {
+  try {
+    await navigator.clipboard.writeText(salaCodigo);
+    alert("Código copiado 📋");
+  } catch (e) {
+    prompt("Copia este código:", salaCodigo);
+  }
+};
+
+function escuchar() {
+  const q = query(cartasRef, where("sala", "==", salaCodigo));
+  unsubCartas = onSnapshot(q, function (snap) {
+    const todas = snap.docs.map(function (d) { return d.data(); });
+    pintar(todas);
+  }, function (err) {
+    alert("Error con las cartas: " + err.message);
+  });
+
+  const qt = query(trazosRef, where("sala", "==", salaCodigo));
+  unsubTrazos = onSnapshot(qt, function (snap) {
+    trazos = snap.docs.map(function (d) {
+      const x = d.data();
+      x.ref = d.ref;
+      return x;
+    });
+    trazos.sort(function (a, b) { return a.t - b.t; });
+    redibujar();
+  }, function (err) {
+    alert("Error con el lienzo: " + err.message);
+  });
+}
+
+function pintarSellos(ctxSellos) {
   const cont = $("sellos");
   cont.innerHTML = "";
   let ganados = 0;
   SELLOS.forEach(function (s) {
-    const ok = s.ok(ctx);
+    const ok = s.ok(ctxSellos);
     if (ok) ganados++;
     const d = document.createElement("div");
     d.className = "sello" + (ok ? " ganado" : "");
@@ -160,9 +575,8 @@ function pintarSellos(ctx) {
 
 function pintar(todas) {
   const hoy = hoyStr();
-  const miNombre = yo.toLowerCase();
-  const recibidas = todas.filter(function (c) { return c.de.toLowerCase() !== miNombre; });
-  const enviadas = todas.filter(function (c) { return c.de.toLowerCase() === miNombre; });
+  const recibidas = todas.filter(function (c) { return c.uid !== uid; });
+  const enviadas = todas.filter(function (c) { return c.uid === uid; });
   recibidas.sort(function (a, b) { return b.fecha.localeCompare(a.fecha); });
   enviadas.sort(function (a, b) { return b.fecha.localeCompare(a.fecha); });
 
@@ -217,13 +631,6 @@ function pintar(todas) {
   pintarSellos({ enviadas: enviadas.length, abiertas: nuevas, hoy: hoy });
 }
 
-$("btnEntrar").onclick = function () {
-  const n = $("inNombre").value.trim();
-  const c = $("inSala").value.trim().toLowerCase();
-  if (!n || !c) { alert("Pon tu nombre y el código de pareja"); return; }
-  entrar(n, c);
-};
-
 $("btnEscribir").onclick = function () {
   const f = $("formEscribir");
   f.style.display = f.style.display === "none" ? "block" : "none";
@@ -234,7 +641,7 @@ $("btnEnviar").onclick = async function () {
   const texto = $("inTexto").value.trim();
   if (!titulo || !texto) { alert("Falta el título o la carta"); return; }
   try {
-    await addDoc(cartasRef, { sala: sala, de: yo, titulo: titulo, texto: texto, fecha: hoyStr(), creada: serverTimestamp() });
+    await addDoc(cartasRef, { sala: salaCodigo, uid: uid, de: yoNombre, titulo: titulo, texto: texto, fecha: hoyStr(), creada: serverTimestamp() });
     $("inTitulo").value = "";
     $("inTexto").value = "";
     $("formEscribir").style.display = "none";
@@ -244,17 +651,21 @@ $("btnEnviar").onclick = async function () {
   }
 };
 
-$("btnSalir").onclick = function () {
-  localStorage.removeItem("buzon");
-  if (desuscribir) desuscribir();
-  location.reload();
-};
-
-const guardado = localStorage.getItem("buzon");
-if (guardado) {
-  const g = JSON.parse(guardado);
-  entrar(g.nombre, g.codigo);
-}
+// ARRANQUE (Ctrl+F esto)
+localStorage.removeItem("buzon");
+onAuthStateChanged(auth, function (user) {
+  if (user) {
+    uid = user.uid;
+    yoNombre = user.displayName || (user.email || "").split("@")[0];
+    mostrarSalas();
+  } else {
+    uid = "";
+    yoNombre = "";
+    if (unsubSalas) { unsubSalas(); unsubSalas = null; }
+    salirDeSala();
+    mostrarPantalla("pantallaAuth");
+  }
+});
 </script>
 </body>
 </html>
